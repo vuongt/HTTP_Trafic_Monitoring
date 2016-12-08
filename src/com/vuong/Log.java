@@ -1,7 +1,5 @@
 package com.vuong;
 
-import javafx.scene.input.DataFormat;
-
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -17,8 +15,8 @@ public class Log {
     private String logRaw;
     private Date time;
     private String url;
-    //regex pattern for common log format
-    private final Pattern pattern = Pattern.compile(
+    //regex PATTERN for common log format
+    private final Pattern PATTERN = Pattern.compile(
             "^([\\d.]+)" + // client IP
             " (\\S+)" + // user RFC 1413 identifier
             " (\\S+)" + //user's id
@@ -30,7 +28,7 @@ public class Log {
 
     public Log(String logRaw) throws ParseException {
         this.logRaw = logRaw;  //extract time and url
-        Matcher m = pattern.matcher(logRaw);
+        Matcher m = PATTERN.matcher(logRaw);
         if (m.matches()){
             DateFormat format = new SimpleDateFormat("dd/MMM/yyyy:HH:mm:ss Z", Locale.ENGLISH);
             this.time = format.parse(m.group(4)); //extract time

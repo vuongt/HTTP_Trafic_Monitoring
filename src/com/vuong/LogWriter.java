@@ -35,13 +35,21 @@ public class LogWriter {
             try {
                 file.createNewFile();
                 FileWriter fw = new FileWriter(file, true); //appends to end of file
-                while(true){
+                boolean running = true;
+                while(running){
                     fw.write("127.0.0.1 user-identifier user-id ["+mFormat.format(new Date())+"] \"GET http://mysite/mysection/mypage HTTP/1.0\" 200 2048\n");
-                    fw.flush();
-                    Thread.sleep(interval);
+                    fw.flush(); // write the line right away, flush all buffering content
+                    try {
+                        Thread.sleep(interval);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                        fw.close();
+                        running = false;
+                    }
                 }
-            } catch (IOException | InterruptedException e) {
+            } catch (IOException e) {
                 e.printStackTrace();
+                //TODO
             }
         }
     }

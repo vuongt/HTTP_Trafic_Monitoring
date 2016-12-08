@@ -32,7 +32,7 @@ public class Main {
         lw.writeLog();
 
         LogReader lr = new LogReader("/Users/vuong/log.txt");
-        lr.read();
+        lr.start();
 
 
     }
