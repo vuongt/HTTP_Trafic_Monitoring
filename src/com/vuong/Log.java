@@ -1,5 +1,12 @@
 package com.vuong;
 
+import javafx.scene.input.DataFormat;
+
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -8,7 +15,7 @@ import java.util.regex.Pattern;
  */
 public class Log {
     private String logRaw;
-    private String time;
+    private Date time;
     private String url;
     //regex pattern for common log format
     private final Pattern pattern = Pattern.compile(
@@ -21,31 +28,39 @@ public class Log {
             " (\\d+|(.+?))"); // number of bytes in response
 
 
-    public Log(String logRaw) {
-        this.logRaw = logRaw;
-        //extract time and url
+    public Log(String logRaw) throws ParseException {
+        this.logRaw = logRaw;  //extract time and url
         Matcher m = pattern.matcher(logRaw);
         if (m.matches()){
-            this.time = m.group(4); //extract time
+            DateFormat format = new SimpleDateFormat("dd/MMM/yyyy:HH:mm:ss Z", Locale.ENGLISH);
+            this.time = format.parse(m.group(4)); //extract time
             this.url = m.group(6); // extract the url
         } //TODO throw new exception
     }
 
     /**
      * extract the section from a url
-     * @return the section visited
+     * @return String the section visited
      */
     public String getSection(){
         String section = url;
-        if (section.startsWith("http://")){
-            section = section.substring(7);
-        } else if (section.startsWith("https://")){
-            section = section.substring(8);
+        if (url!=null&&url!=""){
+            if (section.startsWith("http://")){
+                section = section.substring(7);
+            } else if (section.startsWith("https://")){
+                section = section.substring(8);
+            }
+            // the url can be "abc", "abc/" "abc/abc" or "abc/abc/" or abc/abc/abc
+            String[] parts = section.split("/");
+            if (parts.length<3) return section; //TODO attention the slash at the end
+            else return parts[0]+"/"+parts[1];
+        } else {
+            return null;
         }
-        // the url can be "abc", "abc/" "abc/abc" or "abc/abc/" or abc/abc/abc
-        String[] parts = section.split("/");
-        if (parts.length<3) return section; //TODO attention the slash at the end
-        else return parts[0]+"/"+parts[1];
+    }
+
+    public Date getTime() {
+        return time;
     }
 
     public void print(){
