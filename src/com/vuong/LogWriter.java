@@ -13,7 +13,7 @@ import java.io.File;
 public class LogWriter {
     private String path; //path of the file to write to
     private int interval; //interval for each log write
-    private final int DEFAULT_INTERVAL =1000; //in ms
+    private final int DEFAULT_INTERVAL =500; //in ms
 
     public LogWriter(String path) {
         this.path = path;
@@ -31,14 +31,13 @@ public class LogWriter {
         public void run() {
             DateFormat mFormat = new SimpleDateFormat("dd/MMM/yyyy:HH:mm:ss Z", Locale.ENGLISH);
             File file = new File(path);
-            if (file.exists()) file.delete();
+            //if (file.exists()) file.delete();
             try {
-                file.createNewFile();
+                //file.createNewFile();
                 FileWriter fw = new FileWriter(file, true); //appends to end of file
                 boolean running = true;
                 while(running){
-                    fw.write("127.0.0.1 user-identifier user-id ["+mFormat.format(new Date())+"] \"GET http://mysite/mysection/mypage HTTP/1.0\" 200 2048\n");
-                    fw.flush(); // write the line right away, flush all buffering content
+                    fw.write("127.0.0.1 user-identifier user-id ["+mFormat.format(new Date())+"] \"GET http://mysite/mysection/mypage HTTP/1.0\" 200 2048 \"-\" \"-\"\n");
                     try {
                         Thread.sleep(interval);
                     } catch (InterruptedException e) {
@@ -46,6 +45,23 @@ public class LogWriter {
                         fw.close();
                         running = false;
                     }
+                    fw.write("127.0.0.1 user-identifier user-id ["+mFormat.format(new Date())+"] \"GET https://othersite/othersection/otherpage HTTP/1.0\" 200 2048 \"-\" \"-\"\n");
+                    try {
+                        Thread.sleep(interval/2);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                        fw.close();
+                        running = false;
+                    }
+                    fw.write("127.0.0.1 user-identifier user-id ["+mFormat.format(new Date())+"] \"GET https://othersite/othersection/otherpage HTTP/1.0\" 200 2048 \"-\" \"-\"\n");
+                    try {
+                        Thread.sleep(interval/2);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                        fw.close();
+                        running = false;
+                    }
+                    fw.flush(); // write the line right away, flush all buffering content
                 }
             } catch (IOException e) {
                 e.printStackTrace();
