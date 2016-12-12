@@ -33,9 +33,16 @@ public class LogWriter {
      * Stop the write thread
      */
     public void stop(){
+        System.out.println("Stop writing process...");
         if (writeThread!=null){
             writeThread.terminate();
+            try {
+                writeThread.join(); //waiting for the process to terminated
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
+        System.out.println("Writing process stopped");
     }
 
     /**
@@ -63,7 +70,7 @@ public class LogWriter {
 
                 // Low traffic simulation
                 while(System.currentTimeMillis()<period1 && running){
-                    fw.write("127.0.0.1 user-identifier user-id ["+mFormat.format(new Date())+"] \"GET http://mysite/mysection/mypage HTTP/1.0\" 200 2048 \"-\" \"-\"\n");
+                    fw.write("127.0.0.1 user-identifier user-id ["+mFormat.format(new Date())+"] \"GET http://mysite/mysection/mypage HTTP/1.0\" 200 2048\n");
                     try {
                         Thread.sleep(interval*50); //Write every 15s
                     } catch (InterruptedException e) {
@@ -76,7 +83,7 @@ public class LogWriter {
 
                 // High traffic simulation
                 while(period1<System.currentTimeMillis()&&System.currentTimeMillis()<period2 && running){
-                    fw.write("127.0.0.1 user-identifier user-id ["+mFormat.format(new Date())+"] \"GET http://mysite/mysection/mypage HTTP/1.0\" 200 2048 \"-\" \"-\"\n");
+                    fw.write("194.168.0.10 user-identifier user-id ["+mFormat.format(new Date())+"] \"GET http://mysite/mysection/mypage HTTP/1.0\" 200 2048\n");
                     try {
                         Thread.sleep(interval);
                     } catch (InterruptedException e) {
@@ -84,7 +91,7 @@ public class LogWriter {
                         fw.close();
                         running = false;
                     }
-                    fw.write("127.0.0.1 user-identifier user-id ["+mFormat.format(new Date())+"] \"GET https://othersite/othersection/otherpage HTTP/1.0\" 200 2048 \"-\" \"-\"\n");
+                    fw.write("127.0.0.1 user-identifier user-id ["+mFormat.format(new Date())+"] \"GET https://othersite/othersection/otherpage HTTP/1.0\" 200 2048\n");
                     try {
                         Thread.sleep(interval/2);
                     } catch (InterruptedException e) {
@@ -92,7 +99,7 @@ public class LogWriter {
                         fw.close();
                         running = false;
                     }
-                    fw.write("127.0.0.1 user-identifier user-id ["+mFormat.format(new Date())+"] \"GET https://othersite/othersection/otherpage HTTP/1.0\" 200 2048 \"-\" \"-\"\n");
+                    fw.write("194.168.0.10 user-identifier user-id ["+mFormat.format(new Date())+"] \"GET https://othersite/othersection/otherpage HTTP/1.0\" 200 2048\n");
                     try {
                         Thread.sleep(interval/2);
                     } catch (InterruptedException e) {
@@ -105,7 +112,7 @@ public class LogWriter {
 
                 //Normal traffic
                 while(System.currentTimeMillis()>period2 && running){
-                    fw.write("127.0.0.1 user-identifier user-id ["+mFormat.format(new Date())+"] \"GET http://mysite/mysection/mypage HTTP/1.0\" 200 2048 \"-\" \"-\"\n");
+                    fw.write("127.0.0.1 user-identifier user-id ["+mFormat.format(new Date())+"] \"GET http://mysite/mysection/mypage HTTP/1.0\" 200 2048\n");
                     try {
                         Thread.sleep(interval);
                     } catch (InterruptedException e) {

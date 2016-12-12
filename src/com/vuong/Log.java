@@ -19,11 +19,11 @@ public class Log {
     private Date time;      //Time of the log
     private String url;     //url visited
 
-    //Bonus
+    //Bonus for reporting on user ip
     private String userIP;
 
     //regex PATTERN for common log or common log combined format; useful for further information extract
-    private final Pattern PATTERN = Pattern.compile(Config.COMMON_LOG_COMBINED_PATTERN);
+    private final Pattern PATTERN = Pattern.compile(Config.COMMON_LOG_PATTERN);
 
     public Log(String logRaw) throws ParseException {
         this.logRaw = logRaw;

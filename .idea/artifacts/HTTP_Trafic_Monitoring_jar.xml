@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="HTTP Trafic Monitoring:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/HTTP_Trafic_Monitoring_jar</output-path>
+    <root id="archive" name="HTTP Trafic Monitoring.jar">
+      <element id="module-output" name="HTTP Trafic Monitoring" />
+    </root>
+  </artifact>
+</component>

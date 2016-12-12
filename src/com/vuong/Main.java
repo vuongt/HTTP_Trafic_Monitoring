@@ -7,6 +7,8 @@ import java.util.Scanner;
 public class Main {
 
     public static void main(String[] args) {
+        String os = System.getProperty("os.name");
+        System.out.println(os);
         LogReader lr = null;
         LogWriter lw= null;
         Scanner scan = new Scanner(System.in);  // Reading from System.in
@@ -50,8 +52,14 @@ public class Main {
                         File userDir = new File(userPath);
                         if (userDir.isDirectory()&&userDir.exists()){
                             System.out.println("Start Traffic Monitoring");
-                            if (!userPath.endsWith("/")) {
-                                userPath = userPath + "/";
+                            if (os.startsWith("Windows")){
+                                if (!userPath.endsWith("\\")) {
+                                    userPath = userPath + "\\";
+                                }
+                            } else {
+                                if (!userPath.endsWith("/")) {
+                                    userPath = userPath + "/";
+                                }
                             }
                             File file = new File(userPath+"access.log");
                             if (file.exists()) file.delete();
@@ -81,8 +89,9 @@ public class Main {
             String command = scan.nextLine();
             switch (command){
                 case "stop" :
-                    if (lr!=null) lr.stop();
+                    if(lr!=null) lr.stop("Manuel stop by user");
                     if(lw!=null) lw.stop();
+                    System.out.println("Stop all processes completed");
                     break;
                 default:
                     System.out.print("Invalid command");
