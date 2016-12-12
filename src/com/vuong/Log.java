@@ -10,7 +10,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Represent a log object
+ * Represent a log line
  */
 
 public class Log {

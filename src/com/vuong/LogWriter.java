@@ -9,7 +9,7 @@ import java.io.File;
 
 /**
  * Created by vuong on 08/12/2016.
- * Simulate a log file actively written to
+ * Simulate a log file been actively written to
  */
 public class LogWriter {
     private String path;  //path of the file to write to

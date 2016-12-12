@@ -18,6 +18,68 @@ public class Main {
         System.out.println("---------------------------------");
         System.out.println("Created by Tuyet VUONG");
 
+        //configure parameters of the application
+        System.out.println("Application's parameter is configured as follow :\n" +
+                "Period for checking section hits (in s): 10\n" +
+                "Period for generating traffic alerts (in min): 2\n" +
+                "Traffic limit during the period above: 450\n" +
+                "Do you want to reconfigure ? y or n");
+
+        boolean configureOk = false;
+        while (!configureOk){
+            String conf = scan.nextLine();
+            switch (conf){
+                case "y":
+                    boolean sectionOk = false;
+                    while (!sectionOk){
+                        System.out.println("Set the period for checking section hits (in s): ");
+                        try{
+                            Integer param1 = Integer.parseInt(scan.nextLine());
+                            if (param1>0){
+                                Config.SECTION_REPORT_INTERVAL = param1*1000;
+                                sectionOk = true;
+                            } else throw new NumberFormatException();
+                        } catch (NumberFormatException e){
+                            System.out.println("Invalid input");
+                        }
+                    }
+                    boolean trafficOk = false;
+                    while (!trafficOk){
+                        System.out.println("Set the period for generating traffic alerts (in min): ");
+                        try {
+                            Integer param2 = Integer.parseInt(scan.nextLine());
+                            if (param2>0){
+                                Config.CHECK_TRAFFIC_INTERVAL = param2*60*1000;
+                                trafficOk = true;
+                            } else throw new NumberFormatException();
+                        } catch (NumberFormatException e){
+                            System.out.println("Invalid input");
+                        }
+                    }
+                    boolean limitOk = false;
+                    while (!limitOk){
+                        System.out.println("Set the traffic limit during the period above: ");
+                        try {
+                            Integer param3 = Integer.parseInt(scan.nextLine());
+                            if (param3>0){
+                                Config.TRAFFIC_LIMIT = param3;
+                                limitOk = true;
+                            } else throw new NumberFormatException();
+                        }catch (NumberFormatException e){
+                            System.out.println("Invalid input");
+                        }
+
+                    }
+                    configureOk = true;
+                    break;
+                case "n":
+                    configureOk = true;
+                    break;
+                default:
+                    System.out.println("Please answer y or n: ");
+                    break;
+            }
+        }
 
         boolean optionOk = false;
         while (!optionOk){
@@ -27,6 +89,7 @@ public class Main {
                 case "y" :
                     boolean fileOk = false;
                     while (!fileOk){
+                        //take the path of log file
                         System.out.println("Enter the location of your log file: ");
                         String userPath = scan.nextLine();
                         File userFile = new File(userPath);
@@ -42,6 +105,7 @@ public class Main {
                     optionOk = true;
                     break;
                 case "n":
+                    //ask for the directory to put the log file
                     boolean dirOk = false;
                     while (!dirOk){
                         System.out.println("Enter the directory where you want to put the test log file.\n" +
@@ -89,7 +153,7 @@ public class Main {
             String command = scan.nextLine();
             switch (command){
                 case "stop" :
-                    if(lr!=null) lr.stop("Manuel stop by user");
+                    if(lr!=null) lr.stop("Manually stop by user");
                     if(lw!=null) lw.stop();
                     System.out.println("Stop all processes completed");
                     break;

@@ -11,6 +11,8 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 
 /**
  * Created by vuong on 08/12/2016.
+ * This class manages 2 threads, one for read and enqueue logs from access log file;
+ * the other for analyse and deque log one by one
  */
 public class LogReader {
 
@@ -93,7 +95,7 @@ public class LogReader {
                 while (running){
                     if ((line = fileReader.readLine()) != null){
                         try {
-                            logs.offer(new Log(line));
+                            logs.offer(new Log(line)); //enqueue a new log
                         } catch (ParseException e) {
                             e.printStackTrace();
                             fileReader.close();
@@ -101,7 +103,7 @@ public class LogReader {
                         }
                     }else{
                         try {
-                            Thread.sleep(Config.SECTION_REPORT_INTERVAL);
+                            Thread.sleep(Config.READ_LOG_WAIT_TIME);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                             fileReader.close();
@@ -238,7 +240,7 @@ public class LogReader {
                     }
                     //in all case waiting for the reader to add new element
                     try {
-                        Thread.sleep(Config.SECTION_REPORT_INTERVAL+1); // (interval + 1) assures that the reader has add some elements to  the queue
+                        Thread.sleep(Config.READ_LOG_WAIT_TIME+1); // (interval + 1) assures that the reader has add some elements to  the queue
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                         stop("Thread Analyse interrupted");
@@ -267,7 +269,7 @@ public class LogReader {
          * @param end
          */
         public void reportNormalTraffic(int totalTraffic, Date start, Date end){
-            System.out.println("MESS: Traffic over the pass 2 minutes from "+ start+ " to " +end + " - number of hits = " +totalTraffic);
+            System.out.println("MESSAGE: Traffic over the pass 2 minutes from "+ start+ " to " +end + " - number of hits = " +totalTraffic);
         }
 
 
@@ -293,7 +295,7 @@ public class LogReader {
          */
         public void showTrafficRecovered(int totalTraffic, Date d){
             DateFormat mFormat = new SimpleDateFormat("dd/MMM/yyyy:HH:mm:ss Z", Locale.ENGLISH);
-            System.out.println("MESS: Traffic recovered - hits = "+ totalTraffic+", recovered at " + mFormat.format(d));
+            System.out.println("MESSAGE: Traffic recovered - hits = "+ totalTraffic+", recovered at " + mFormat.format(d));
         }
     }
 }
