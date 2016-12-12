@@ -10,37 +10,36 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Created by vuong on 08/12/2016.
+ * Represent a log object
  */
 
 public class Log {
-    private String logRaw;
-    private Date time;
-    private String url;
+
+    private String logRaw;  //Log string expression
+    private Date time;      //Time of the log
+    private String url;     //url visited
 
     //Bonus
     private String userIP;
 
-    //regex PATTERN for common log or common log combined format
-    //useful for further information extract
+    //regex PATTERN for common log or common log combined format; useful for further information extract
     private final Pattern PATTERN = Pattern.compile(Config.COMMON_LOG_COMBINED_PATTERN);
 
-
     public Log(String logRaw) throws ParseException {
-        this.logRaw = logRaw;  //extract time and url
+        this.logRaw = logRaw;
         Matcher m = PATTERN.matcher(logRaw);
         if (m.matches()){
             DateFormat format = new SimpleDateFormat("dd/MMM/yyyy:HH:mm:ss Z", Locale.ENGLISH);
-            this.time = format.parse(m.group(4)); //extract time
-            this.url = m.group(6); // extract the url
-            this.userIP = m.group(1);
+            this.time = format.parse(m.group(4));   //extract time
+            this.url = m.group(6);                  //extract the url
+            this.userIP = m.group(1);               //extract userIP
         } else{
             throw new ParseException("Log file format doesn't match log pattern",0);
         }
     }
 
     /**
-     * extract the section from a url
+     * Extract the section part from a url
      * @return String the section visited
      */
     public String getSection(){
@@ -52,16 +51,15 @@ public class Log {
                 section = section.substring(8);
             }
             String[] parts = section.split("/");
-            if (parts.length<3) return section; //TODO attention the slash at the end
+            if (parts.length<3) return section;
+
             else return parts[0]+"/"+parts[1];
         } else {
             return null;
         }
     }
 
-    public String getUserIP(){
-        return this.userIP;
-    }
+    public String getUserIP(){ return this.userIP;}
 
     public Date getTime() {
         return time;

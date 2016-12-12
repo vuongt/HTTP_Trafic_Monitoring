@@ -15,14 +15,13 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 public class LogReader {
 
     private String path; //the path to log file
-    private int interval; //time interval for each start cycle in ms
-    private ConcurrentLinkedDeque<Log> logs;
 
-    // one of the most suitable structure for this case because it is thread-safe (can be accessed by multiple threads at the same time)
-    // and it has the queue structure, supports FIFO operations
-    // Memory consistency effects: As with other concurrent collections,
-    // actions in a thread prior to placing an object into a ConcurrentLinkedQueue happen-before
-    // actions subsequent to the access or removal of that element from the ConcurrentLinkedQueue in another thread.
+    /*
+     * one of the most suitable structure for stocking logs in this case is ConcurrentLinkedDeque
+     * because it is thread-safe (can be accessed by multiple threads at the same time)
+     * and it has the queue structure, supports FIFO operations
+     */
+    private ConcurrentLinkedDeque<Log> logs;
 
     private Thread readThread=null;
     private Read read;
@@ -31,10 +30,12 @@ public class LogReader {
 
     public LogReader(String path) {
         this.path = path;
-        this.interval = Config.SECTION_REPORT_INTERVAL;
         this.logs = new ConcurrentLinkedDeque<>();
     }
 
+    /**
+     * Start reading and analysing logs
+     */
     public void start(){
         read = new Read();
         readThread = new Thread(read);
@@ -45,6 +46,9 @@ public class LogReader {
         analyseThread.start();
     }
 
+    /**
+     * properly stopping all threads
+     */
     public void stop(){
         System.out.println("Stopping process...");
         if (readThread!=null){
@@ -55,13 +59,22 @@ public class LogReader {
                 e.printStackTrace();
             }
         }
+        if (analyseThread!=null){
+            analyse.terminate(); //terminate the process
+            try {
+                analyseThread.join(); //waiting for the thread to finish
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     /**
-     * This thread read log from an active log file and add it to the queue logs
+     * Read log from an active log file and add it to the queue logs
      */
     private class Read implements Runnable{
         private volatile boolean running = true;
+
         public void terminate(){
             running = false;
         }
@@ -86,7 +99,7 @@ public class LogReader {
                         }
                     }else{
                         try {
-                            Thread.sleep(interval);
+                            Thread.sleep(Config.SECTION_REPORT_INTERVAL);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                             br.close();
@@ -101,14 +114,26 @@ public class LogReader {
         }
     }
 
-    // Analyse in an other thread so that the reading process isn't disturbed
-    private class Analyse implements Runnable{
+    /**
+     * Analyse the logs queue in an other thread so that the reading process isn't disturbed
+     */
 
+    private class Analyse implements Runnable{
+        private volatile boolean running = true;
+
+        public void terminate(){
+            running = false;
+        }
         @Override
         public void run() {
             HashMap<String, Integer> sections = new HashMap<>(); //storing sections occurrences
+            HashMap<String, Integer> ips = new HashMap<>(); //storing ip occurrences
+
+
             Date startTraffic = new Date();  //Time origin for monitoring traffic
             int totalTraffic=0; //for alerting traffic
+            String ip="";  //section with the most hits
+            int maxIpHit = 0;//biggest number of hits
 
             Date startSection = new Date();  //Time origin for monitoring section
             int traffic = 0;    //for reporting traffic while monitoring section
@@ -116,64 +141,43 @@ public class LogReader {
             int maxSectionHit = 0;//biggest number of hits
 
             boolean alert = false;  // true if an alert has been showing
-            boolean running = true; // analysing loop
-
-            /*boolean iniFinish = false; //initializing loop
-            while (!iniFinish){
-                Log firstLog = logs.peek();
-                if (firstLog!=null){ // if the logs queue isn't empty, initialize the start time by the head of the queue
-                    startSection = firstLog.getTime();
-                    startTraffic = firstLog.getTime();
-                    iniFinish=true;
-                } else {
-                    try {
-                        Thread.sleep(interval+1); // (interval + 1) assures that the reader has added some elements to  the queue
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                        iniFinish = true;
-                    }
-                }
-            }*/
 
             while(running){
                 Log l = logs.poll(); // for each loop we get the log at the head of the queue
+
+                //If the logs queue is not empty, keep analysing until we meet a log that out of time cycle
                 if (l!=null){
-                    // monitoring section and common traffic
-                    // the condition new Date().getTime()-startSection.getTime() > Config.SECTION_REPORT_INTERVAL assures that a notification is triggered every 10s but the report result has a slight difference with the reality
-                    //if this difference is regular, than it is acceptable, but if this difference diverge -> trouble trouble
+                    //=======monitoring section and common traffic==========
                     if (l.getTime().getTime()-startSection.getTime() > Config.SECTION_REPORT_INTERVAL) {
 
-                        // end of a cycle. Print report :
-                        report(traffic, startSection, l.getTime(), section, maxSectionHit);
+                        report(traffic, startSection, l.getTime(), section, maxSectionHit); // end of a cycle, print report
 
-                        //re-initialized the traffic, start time, section count and sections hash map
+                        //re-initialized variables
                         startSection = new Date();
                         traffic = 0;
                         sections.clear();
                         section = "";
                         maxSectionHit=0;
+
                     } else {
                         traffic ++; //increment traffic count
-                        //save section information
-                        if(sections.containsKey(l.getSection())) {
-                            int sectionHit=sections.get(l.getSection());
-                            if (sectionHit +1 > maxSectionHit) {
-                                maxSectionHit = sectionHit + 1;
-                                section = l.getSection();
-                            }
-                            sections.put(l.getSection(), sectionHit+1);
-                        } else {
-                            sections.put(l.getSection(), 1);
+                        int sectionHit;
+                        //increment section hash map
+                        if(sections.containsKey(l.getSection())) sectionHit= sections.get(l.getSection())+1;
+                        else sectionHit =1;
+
+                        if (sectionHit > maxSectionHit) {
+                            maxSectionHit = sectionHit;
+                            section = l.getSection();
                         }
+                        sections.put(l.getSection(), sectionHit);
                     }
 
-                    //check time and counting traffic
-                    //difference of time in ms
-                    //problem if the write and read queue process doesn't fast enough
-                    if (l.getTime().getTime()-startTraffic.getTime() > Config.CHECK_TRAFFIC_INTERVAL ) {
-                        System.out.println("Traffic over the pass 2min :"+totalTraffic);
+                    //========counting traffic, check for alert===============
+                    if (l.getTime().getTime()-startTraffic.getTime() > Config.CHECK_TRAFFIC_INTERVAL ) { //difference of time in ms
+                        reportNormalTraffic(totalTraffic, startTraffic, l.getTime());
                         if (totalTraffic>Config.TRAFFIC_LIMIT){
-                            showTrafficAlert(totalTraffic, l.getTime());
+                            showTrafficAlert(totalTraffic, l.getTime(), ip, maxIpHit);
                             alert = true;
                         }
                         if (totalTraffic<Config.TRAFFIC_LIMIT && alert){
@@ -182,9 +186,23 @@ public class LogReader {
                         }
                         startTraffic = l.getTime();
                         totalTraffic =0;
+                        ips.clear();
+                        ip="";
+                        maxIpHit = 0;
                     } else {
                         totalTraffic++;
+                        int ipHit;
+                        if(ips.containsKey(l.getUserIP())) ipHit=ips.get(l.getUserIP())+1;
+                        else ipHit = 1;
+
+                        if (ipHit > maxSectionHit) {
+                            maxIpHit = ipHit;
+                            ip = l.getUserIP();
+                        }
+                        ips.put(l.getUserIP(), ipHit);
                     }
+
+                    //If there is no more log to read, check if cycles have terminated and force report
                 } else {
                     if (new Date().getTime()-startSection.getTime() > Config.SECTION_REPORT_INTERVAL) {
                         //Force to report
@@ -199,9 +217,9 @@ public class LogReader {
                     }
                     if (new Date().getTime()-startTraffic.getTime() > Config.CHECK_TRAFFIC_INTERVAL) {
                         //Force to report
-                        System.out.println("Traffic over the pass 2min :"+ totalTraffic);
+                        reportNormalTraffic(totalTraffic, startTraffic, new Date());
                         if (totalTraffic>Config.TRAFFIC_LIMIT){
-                            showTrafficAlert(totalTraffic, new Date());
+                            showTrafficAlert(totalTraffic, new Date(), ip, maxIpHit);
                             alert = true;
                         }
                         if (totalTraffic<Config.TRAFFIC_LIMIT && alert){
@@ -210,33 +228,40 @@ public class LogReader {
                         }
                         startTraffic = new Date();
                         totalTraffic =0;
-
+                        ips.clear();
+                        ip="";
+                        maxIpHit = 0;
                     }
-                    //waiting for the reader to add new element
+                    //in all case waiting for the reader to add new element
                     try {
-                        Thread.sleep(interval+1); // (interval + 1) assures that the reader has add some elements to  the queue
+                        Thread.sleep(Config.SECTION_REPORT_INTERVAL+1); // (interval + 1) assures that the reader has add some elements to  the queue
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                         running = false;
                     }
                 }
             }
-
         }
 
         public void report(int traffic, Date start, Date end, String section , int maxSectionHit){
-            System.out.println("Traffic from "+start+ " to "+end+" :   "+traffic);
-            System.out.println("Most visited section: "+section+ " number of hits :" +maxSectionHit);
+            System.out.println("INFO: Traffic from "+start+ " to "+end+" :   "+traffic);
+            System.out.println("INFO: Most visited section: "+section+ " number of hits :" +maxSectionHit);
         }
 
-        public void showTrafficAlert(int totalTraffic, Date d){
+        public void reportNormalTraffic(int totalTraffic, Date start, Date end){
+            System.out.println("INFO: Traffic over the pass 2 minutes from "+ start+ " to " +end + " - number of hits = " +totalTraffic);
+        }
+
+        public void showTrafficAlert(int totalTraffic, Date d, String ip, int maxIpHit){
             DateFormat mFormat = new SimpleDateFormat("dd/MMM/yyyy:HH:mm:ss Z", Locale.ENGLISH);
-            System.out.println("High traffic generated an alert - hits = "+ totalTraffic+", triggered at " + mFormat.format(d));
+            System.out.println("ALERT: Traffic limit = " + Config.TRAFFIC_LIMIT);
+            System.out.println("ALERT: High traffic generated an alert - hits = "+ totalTraffic+", triggered at " + mFormat.format(d));
+            System.out.println("ALERT: Most access ip: "+ip+" - hits = "+maxIpHit);
         }
 
         public void showTrafficRecovered(int totalTraffic, Date d){
             DateFormat mFormat = new SimpleDateFormat("dd/MMM/yyyy:HH:mm:ss Z", Locale.ENGLISH);
-            System.out.println("Traffic recovered - hits = "+ totalTraffic+", recovered at " + mFormat.format(d));
+            System.out.println("INFO: Traffic recovered - hits = "+ totalTraffic+", recovered at " + mFormat.format(d));
         }
     }
 }

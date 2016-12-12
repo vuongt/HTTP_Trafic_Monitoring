@@ -1,37 +1,92 @@
 package com.vuong;
 
-import java.text.ParseException;
+import java.io.File;
+import java.io.IOException;
+import java.util.Scanner;
 
 public class Main {
 
     public static void main(String[] args) {
-	// write your code here
-        Log l = null;
-        try {
-            l = new Log("127.0.0.1 user-identifier user-id [09/Dec/2016:12:25:45 +0100] \"GET /user HTTP/1.0\" 200 2048 \"-\" \"-\"");
-        } catch (ParseException e) {
-            e.printStackTrace();
+        LogReader lr = null;
+        LogWriter lw= null;
+        Scanner scan = new Scanner(System.in);  // Reading from System.in
+
+        System.out.println("---------------------------------");
+        System.out.println("|Welcome to HTTP traffic monitor|");
+        System.out.println("---------------------------------");
+        System.out.println("Created by Tuyet VUONG");
+
+
+        boolean optionOk = false;
+        while (!optionOk){
+            System.out.println("Do you have an active log file to test ? y or n");
+            String ans = scan.nextLine();
+            switch (ans) {
+                case "y" :
+                    boolean fileOk = false;
+                    while (!fileOk){
+                        System.out.println("Enter the location of your log file: ");
+                        String userPath = scan.nextLine();
+                        File userFile = new File(userPath);
+                        if (userFile.exists()&&userFile.isFile()){
+                            System.out.println("Start Traffic Monitoring");
+                            lr = new LogReader(userPath);
+                            lr.start();
+                            fileOk = true;
+                        } else {
+                            System.out.println("File doesn't exist, please try again: ");
+                        }
+                    }
+                    optionOk = true;
+                    break;
+                case "n":
+                    boolean dirOk = false;
+                    while (!dirOk){
+                        System.out.println("Enter the directory where you want to put the test log file.\n" +
+                                "The application will create and simulate an active log file called access.log in your directory\n" +
+                                "The application will delete any file called access.log in your directory if it exists\n" +
+                                "Directory: ");
+                        String userPath = scan.nextLine();
+                        File userDir = new File(userPath);
+                        if (userDir.isDirectory()&&userDir.exists()){
+                            System.out.println("Start Traffic Monitoring");
+                            if (!userPath.endsWith("/")) {
+                                userPath = userPath + "/";
+                            }
+                            File file = new File(userPath+"access.log");
+                            if (file.exists()) file.delete();
+                            try {
+                                file.createNewFile();
+                                System.out.println("Log file created");
+                                lw = new LogWriter(userPath+"access.log");
+                                lr = new LogReader(userPath+"access.log");
+                                lw.start();
+                                lr.start();
+                                dirOk = true;
+                            } catch (IOException e) {
+                                System.out.println("Can't create log file in this directory");
+                            }
+                        } else {
+                            System.out.println ("Invalid directory. Please try again.");
+                        }
+                    }
+                    optionOk = true;
+                    break;
+                default :
+                    System.out.println("Invalid command");
+                    break;
+            }
         }
-        l.print();
-        System.out.println(l.getSection());
-
-        String ex1 = "abc";
-        String ex2 = "abc/";
-        String ex3 = "abc/abc";
-        String ex4 = "abc/abc/";
-        String ex5 = "abc/abc/abc";
-        String ex6 = "http://abc/abc/abc";
-        System.out.println(ex1.split("/").length);
-        System.out.println(ex2.split("/").length);
-        System.out.println(ex3.split("/").length);
-        System.out.println(ex4.split("/").length);
-        System.out.println(ex5.split("/").length);
-        System.out.println(ex6.split("/").length);
-
-        LogWriter lw = new LogWriter("/Users/vuong/access.log");
-        lw.writeLog();
-
-        LogReader lr = new LogReader("/Users/vuong/access.log");
-        lr.start();
+        while (true){
+            String command = scan.nextLine();
+            switch (command){
+                case "stop" :
+                    if (lr!=null) lr.stop();
+                    if(lw!=null) lw.stop();
+                    break;
+                default:
+                    System.out.print("Invalid command");
+            }
+        }
     }
 }
